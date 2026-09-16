@@ -1,12 +1,5 @@
 import { Pool } from '@neondatabase/serverless';
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error('DATABASE_URL is not set');
-}
-
-export const pool = new Pool({ connectionString });
-
 export type VideoRecord = {
   id: string;
   url: string;
@@ -27,6 +20,19 @@ type VideoRow = {
   created_at: string | number;
 };
 
+function createPool(): Pool | null {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) return null;
+  return new Pool({ connectionString });
+}
+
+export const pool = createPool();
+
+function requirePool(): Pool {
+  if (!pool) throw new Error('DATABASE_URL is not set');
+  return pool;
+}
+
 function toRecord(row: VideoRow): VideoRecord {
   return {
     id: row.id,
@@ -40,14 +46,14 @@ function toRecord(row: VideoRow): VideoRecord {
 }
 
 export async function listVideos(): Promise<VideoRecord[]> {
-  const { rows } = await pool.query<VideoRow>(
+  const { rows } = await requirePool().query<VideoRow>(
     'SELECT id, url, title, tags, category, thumbnail_url, created_at FROM videos ORDER BY created_at DESC',
   );
   return rows.map(toRecord);
 }
 
 export async function findVideoByUrl(url: string): Promise<VideoRecord | null> {
-  const { rows } = await pool.query<VideoRow>(
+  const { rows } = await requirePool().query<VideoRow>(
     'SELECT id, url, title, tags, category, thumbnail_url, created_at FROM videos WHERE url = $1 LIMIT 1',
     [url],
   );
@@ -63,7 +69,7 @@ export async function insertVideo(input: {
   thumbnailUrl?: string;
   createdAt: number;
 }): Promise<VideoRecord> {
-  const { rows } = await pool.query<VideoRow>(
+  const { rows } = await requirePool().query<VideoRow>(
     `INSERT INTO videos (id, url, title, tags, category, thumbnail_url, created_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING id, url, title, tags, category, thumbnail_url, created_at`,
@@ -81,6 +87,12 @@ export async function insertVideo(input: {
 }
 
 export async function deleteVideo(id: string): Promise<boolean> {
-  const result = await pool.query('DELETE FROM videos WHERE id = $1', [id]);
+  const result = await requirePool().query('DELETE FROM videos WHERE id = $1', [id]);
   return (result.rowCount ?? 0) > 0;
+}
+
+export async function pingDatabase(): Promise<boolean> {
+  if (!process.env.DATABASE_URL) return false;
+  await requirePool().query('SELECT 1');
+  return true;
 }

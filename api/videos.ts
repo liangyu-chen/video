@@ -92,6 +92,7 @@ export default async function handler(req: Req, res: Res) {
     return res.status(405).json({ error: 'method not allowed' });
   } catch (err) {
     console.error('GET/POST /api/videos failed', err);
-    return res.status(500).json({ error: 'internal server error' });
+    const message = err instanceof Error ? err.message : 'internal server error';
+    return res.status(500).json({ error: message });
   }
 }
