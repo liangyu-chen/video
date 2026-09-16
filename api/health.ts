@@ -1,4 +1,4 @@
-import { pingDatabase } from './_lib/db';
+import { pingDatabase } from './_lib/db.js';
 
 type Req = {
   method?: string;

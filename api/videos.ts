@@ -3,7 +3,7 @@ import {
   insertVideo,
   listVideos,
   type VideoRecord,
-} from './_lib/db';
+} from './_lib/db.js';
 
 type Req = {
   method?: string;

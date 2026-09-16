@@ -1,4 +1,4 @@
-import { deleteVideo } from '../_lib/db';
+import { deleteVideo } from '../_lib/db.js';
 
 type Req = {
   method?: string;
